@@ -1,0 +1,27 @@
+{
+  "name": "tiktok-erp-pipeline",
+  "version": "0.1.0",
+  "description": "TikTok Shop product collector with a zero-dependency CLI and local web UI, plus one-click push to a MiaoShou ERP collect box",
+  "keywords": [
+    "tiktok",
+    "tiktok-shop",
+    "erp",
+    "collect-box",
+    "chrome-devtools-protocol",
+    "cdp",
+    "zero-dependency"
+  ],
+  "license": "MIT",
+  "main": "src/cli.js",
+  "bin": {
+    "tkpipe": "src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "ui": "node src/server.js",
+    "smoke": "node test/smoke.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
