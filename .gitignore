@@ -5,6 +5,7 @@ node_modules/
 # personal credentials: never commit
 cookies.json
 cookies*.json
+!cookies.example.json
 *.cookie
 .env
 .env.*
