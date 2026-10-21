@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tkpipe · TikTok 采集 → ERP 采集箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* framed-sheet · seed 2130014310
+   Grid at 1440: canvas 1156 = 12 x 74.33 + 11 x 24; workbench 7 cols (664.3) + 24 + rail 5 cols (467.7).
+   One gap value (24) horizontally and vertically. Depth comes from one border or one tone step; nothing floats. */
+:root {
+  --ground: #f7f9fa;          /* frame tinted a low-chroma blue-grey (this product's world: a pipeline/monitor) */
+  --surface: #ffffff;
+  --raised: #f2f5f6;
+  --active: #e9edee;
+  --border: #e6e9eb;
+  --rule: #eff1f2;
+  --control: #cdd0d3;
+  --text: #131416;
+  --muted: #5d5f60;
+  --faint: #6b6b6b;
+  --primary: #1d1f20;
+  --primary-ink: #ffffff;
+  --accent: #1b6c80;
+  --chart-1: #1b6c80;
+  --chart-muted: #cfd6d8;
+  --positive: #1e7b4f;  --negative: #c4242a;
+  --pill-positive-bg: #dcfae5; --pill-positive-ink: #04250e;
+  --pill-negative-bg: #ffedea; --pill-negative-ink: #831c1e;
+  --pill-warning-bg: #fffbeb; --pill-warning-ink: #92400e;
+  --pill-neutral-bg: #ebedee;  --pill-neutral-ink: #353736;
+  --pill-accent-bg: #e4eff2;   --pill-accent-ink: #14505e;
+
+  --radius-sheet: 16px; --radius-card: 8px; --radius-control: 6px;
+  --sheet-inset: 8px;
+  --sidebar-width: 228px;
+  --gap: 24px; --pad: 24px; --card-pad: 20px;
+  --control-height: 32px; --row-height: 48px; --nav-row: 32px;
+
+  --font: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --fs-title: 22px; --fs-section: 16px; --fs-kpi: 28px; --fs-body: 14px; --fs-small: 12px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-hover: 150ms; --t-press: 120ms; --t-ui: 200ms;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--ground); color: var(--text);
+  font: var(--fs-body)/20px var(--font); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul[class], ol[class] { padding: 0; list-style: none; }
+img, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.num, .kpi-value, td.n, th.n { font-variant-numeric: tabular-nums; }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.92em;
+  background: var(--raised); padding: 1px 5px; border-radius: 4px; }
+.num, .kpi-value { font-variant-numeric: tabular-nums; }
+
+/* ---------- shell: tinted L-frame + white sheet, inset 8px right/bottom ---------- */
+.app { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100svh; background: var(--ground); }
+.sidebar { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column;
+  padding: 16px 12px 20px; overflow: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
+.brand svg { width: 26px; height: 20px; flex: none; }
+.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.brand-scope { font-size: var(--fs-small); color: var(--faint); padding: 0 8px 14px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; height: var(--nav-row);
+  padding: 0 8px; border-radius: 8px; color: var(--muted);
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease; cursor: pointer; }
+.nav-item:hover { background: var(--raised); color: var(--text); }
+.nav-item[aria-current="page"] { background: var(--active); color: var(--text); }
+.nav-item .label { flex: 1; }
+.nav-count { font-size: var(--fs-small); color: var(--faint); font-variant-numeric: tabular-nums; }
+.nav-item[aria-current="page"] .nav-count { color: var(--text); }
+.sidebar .foot { margin-top: auto; padding: 12px 8px 0; font-size: var(--fs-small); color: var(--faint); }
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar { height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 var(--pad); }
+.topbar .where { color: var(--faint); font-size: var(--fs-small); }
+.topbar .spacer { flex: 1; }
+.btn.menu-toggle { display: none; }
+
+.sheet { flex: 1; min-width: 0; margin: 0 var(--sheet-inset) var(--sheet-inset) 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sheet); padding: var(--pad); }
+
+/* ---------- title row ---------- */
+.view { display: none; }
+.view.on { display: block; }
+.title-row { display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.title-row h1 { font-size: var(--fs-title); line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+.title-row .sub { margin-top: 6px; color: var(--muted); max-width: 62ch; }
+.title-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ---------- the pipeline rail: the one element only this product has ---------- */
+.rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
+  margin-bottom: var(--gap); }
+.rail-step { padding: 14px var(--card-pad) 12px; min-width: 0; }
+.rail-step + .rail-step { border-left: 1px solid var(--border); }
+.rail-label { color: var(--muted); font-size: var(--fs-small); }
+.rail-value { margin-top: 4px; font-size: var(--fs-kpi); line-height: 1.15; font-weight: 500;
+  letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.rail-value small { font-size: 0.5em; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.rail-track { margin-top: 10px; height: 3px; border-radius: 999px; background: var(--chart-muted); overflow: hidden; }
+.rail-fill { height: 100%; border-radius: 999px; background: var(--text); transition: width var(--t-ui) var(--ease-out); }
+.rail-step:last-child .rail-fill { background: var(--chart-1); }
+
+/* ---------- grid ---------- */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
+.col-7 { grid-column: span 7; } .col-5 { grid-column: span 5; }
+.col-12 { grid-column: 1 / -1; }
+.col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
+  padding: var(--card-pad); min-width: 0; }
+.panel > header { display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.panel h2 { font-size: var(--fs-section); font-weight: 600; }
+.panel .meta { color: var(--faint); font-size: var(--fs-small); }
+
+/* ---------- fields ---------- */
+.field { display: grid; gap: 8px; }
+.field + .field { margin-top: 16px; }
+.field > label { font-weight: 500; }
+.field .hint { color: var(--muted); font-size: var(--fs-small); line-height: 18px; }
+.input, select.input, textarea.input { height: 38px; padding: 0 12px; width: 100%;
+  border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--surface); }
+textarea.input { height: auto; min-height: 92px; padding: 10px 12px; resize: vertical;
+  font-size: 13px; line-height: 19px; }
+.input::placeholder, textarea.input::placeholder { color: var(--faint); }
+.input:focus, select.input:focus, textarea.input:focus { outline: none; border-color: var(--accent); }
+.field-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.field-row.tight { gap: 6px; }
+select.input { padding-right: 30px; }
+
+/* segmented control: as wide as its options */
+.segmented { display: inline-flex; width: max-content; max-width: 100%; padding: 2px;
+  border-radius: 8px; background: var(--raised); }
+.segmented button { height: 28px; padding: 0 10px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+  white-space: nowrap; flex: none;
+  transition: background-color var(--t-hover) ease, color var(--t-hover) ease; }
+.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 500; }
+
+/* checkbox row */
+.check { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.check input { width: 15px; height: 15px; accent-color: var(--accent); margin: 0; }
+.check strong { color: var(--text); font-weight: 500; }
+
+/* ---------- buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: var(--control-height); padding: 0 12px; border-radius: var(--radius-control);
+  border: 1px solid var(--control); background: var(--surface); font-size: 13px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: background-color var(--t-hover) ease, border-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
+.btn:hover { background: var(--raised); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn.primary { background: var(--primary); color: var(--primary-ink); border-color: transparent; }
+.btn.primary:hover { background: #000; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--raised); color: var(--text); }
+.btn.sm { height: 28px; padding: 0 10px; font-size: 12.5px; }
+
+/* ---------- pill ---------- */
+.pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: 999px; font-size: var(--fs-small); font-weight: 500;
+  background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); white-space: nowrap; flex: none; }
+.pill.pos { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.pill.neg { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.pill.warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.pill.info { background: var(--pill-accent-bg); color: var(--pill-accent-ink); }
+.status-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- count cards (the list filter pattern) ---------- */
+.cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: var(--gap); }
+.count-card { display: grid; gap: 4px; padding: 12px; min-height: 61px; align-content: center;
+  border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface);
+  cursor: pointer; text-align: left;
+  transition: border-color var(--t-hover) ease, background-color var(--t-hover) ease; }
+.count-card:hover { background: var(--raised); }
+.count-card .count-label { color: var(--muted); font-size: 13px; }
+.count-card .count-value { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.count-card[aria-pressed="true"] { border-color: var(--accent); border-width: 1.5px; background: var(--pill-accent-bg); padding: 11.5px; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { height: 36px; padding: 0 12px; text-align: left; font-weight: 400;
+  font-size: var(--fs-small); color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+th:first-child, td:first-child { padding-left: 0; }
+th:last-child, td:last-child { padding-right: 0; }
+td { padding: calc((var(--row-height) - 20px) / 2) 12px; border-bottom: 1px solid var(--rule);
+  vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+th.n, td.n { text-align: right; }
+tr.row-pick { cursor: pointer; }
+tr.row-pick:hover td { background: #fafbfb; }
+.cell-media { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.thumb { width: 40px; height: 40px; flex: none; border-radius: 6px; object-fit: cover;
+  background: var(--raised); }
+.thumb.ph { background: var(--raised); }
+.cell-title { min-width: 0; }
+.cell-title .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+.cell-title .s { color: var(--faint); font-size: var(--fs-small);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46ch; }
+.sel-count { color: var(--muted); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+
+/* ---------- category picker (inline panel, expands) ---------- */
+[hidden] { display: none !important; }
+.cat-body { margin-top: 10px; }
+.cat-list { max-height: 300px; overflow-y: auto; border: 1px solid var(--border);
+  border-radius: var(--radius-control); }
+.cat-top + .cat-top { border-top: 1px solid var(--rule); }
+.cat-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; }
+.cat-row:hover { background: var(--raised); }
+.cat-caret { width: 12px; color: var(--faint); font-size: 10px; flex: none;
+  transition: transform var(--t-hover) var(--ease-out); }
+.cat-top.open .cat-caret { transform: rotate(90deg); }
+.cat-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-id { color: var(--faint); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.cat-kids { display: none; padding: 0 0 8px 28px; }
+.cat-top.open .cat-kids { display: block; }
+.cat-kid { display: flex; align-items: center; gap: 8px; padding: 5px 10px; margin-right: 8px;
+  border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--muted); }
+.cat-kid:hover { background: var(--raised); color: var(--text); }
+.cat-kid.active { background: var(--pill-accent-bg); color: var(--pill-accent-ink); font-weight: 500; }
+
+/* ---------- rail: run state ---------- */
+.run-state { display: grid; gap: 12px; }
+.run-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.run-line .k { color: var(--muted); font-size: var(--fs-small); }
+.run-line .v { font-variant-numeric: tabular-nums; }
+.ticks { display: grid; gap: 6px; margin-top: 2px; }
+.tick { display: flex; gap: 10px; align-items: baseline; font-size: var(--fs-small); }
+.tick .time { color: var(--faint); flex: none; font-variant-numeric: tabular-nums; }
+.tick .msg { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tick.err .msg { color: var(--negative); }
+.tick.ok .msg { color: var(--positive); }
+
+/* ---------- log view ---------- */
+.log-list { border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
+.log-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px;
+  padding: 8px 12px; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.log-row:last-child { border-bottom: 0; }
+.log-row .time { font-size: var(--fs-small); color: var(--faint); font-variant-numeric: tabular-nums; }
+.log-row .msg { color: var(--muted); word-break: break-word; }
+.log-row.err .msg { color: var(--negative); }
+.log-row.ok .msg { color: var(--positive); }
+.log-row.warn .msg { color: var(--warning, #92400e); }
+
+/* empty and loading keep the frame */
+.empty { display: grid; place-items: center; min-height: 132px; padding: 16px;
+  border: 1px dashed var(--control); border-radius: var(--radius-control);
+  color: var(--muted); text-align: center; }
+.empty .line2 { display: block; margin-top: 6px; color: var(--faint); font-size: var(--fs-small); }
+.skeleton { background: var(--raised); border-radius: 4px; }
+
+/* ---------- phone ---------- */
+@media (max-width: 1024px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 30;
+    background: var(--surface); transform: translateX(-100%);
+    transition: transform var(--t-ui) var(--ease-out); padding: 16px; }
+  .sidebar.open { transform: none; }
+  .btn.menu-toggle { display: inline-flex; }
+  .sheet { margin: 0 8px 8px; padding: 16px; border-radius: 14px; }
+  .grid > .col-7, .grid > .col-5, .grid > .col-4, .grid > .col-3 { grid-column: 1 / -1; }
+  .rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rail-step:nth-child(2n) { border-left: 1px solid var(--border); }
+  .rail-step:nth-child(n + 3) { border-top: 1px solid var(--border); }
+  .rail-step:nth-child(3) { border-left: 0; }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .title-row { align-items: flex-start; }
+  /* 表格变两行行：第 1 行 身份 + 价格；第 2 行 销量 · 评分 · 店铺（13px 灰字） */
+  thead { display: none; }
+  table, tbody { display: block; width: 100%; }
+  tr { display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "pick main price"
+      "pick meta meta";
+    column-gap: 10px; row-gap: 6px; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  tbody tr:last-child { border-bottom: 0; }
+  td { border: 0; padding: 0; display: block; }
+
+  tr > td:first-child { grid-area: pick; align-self: center; }
+  tr > td.cell-main { grid-area: main; }
+  tr > td.n:nth-of-type(2) { grid-area: price; justify-self: end; font-weight: 500; }
+
+  /* 次行：把三个字段用 flex 排在同一个网格区里，避免挤在一格 */
+  tr > td.n:nth-of-type(3), tr > td.n:nth-of-type(4), tr > td:last-child {
+    grid-area: meta; font-size: var(--fs-small); color: var(--faint); text-align: left; }
+  tr > td.n:nth-of-type(3) { justify-self: start; }
+  tr > td.n:nth-of-type(4) { justify-self: center; }
+  tr > td:last-child { justify-self: end; }
+
+  .table-wrap { overflow: visible; }
+  .cell-media { gap: 10px; }
+  .thumb { width: 36px; height: 36px; }
+  .cell-title .t { max-width: none; white-space: normal;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cell-title .s { max-width: none; }
+
+  /* 采集箱表：状态 + 标题一行，ID + 来源一行 */
+  .tbl-box tr { grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "bmain bstatus" "bid bid"; }
+  .tbl-box tr > td:nth-child(1) { grid-area: bstatus; justify-self: end; }
+  .tbl-box tr > td:nth-child(2) { grid-area: bmain; }
+  .tbl-box tr > td:nth-child(3) { grid-area: bid; font-size: var(--fs-small); color: var(--faint); }
+  .tbl-box tr > td:nth-child(4) { display: none; }
+}
+@media (max-width: 480px) {
+  .segmented { display: flex; width: 100%; }
+  .segmented button { flex: 1; }
+  .rail-value { font-size: 24px; }
+  .title-row { gap: 12px; }
+  .title-actions { width: 100%; flex-wrap: wrap; gap: 8px; }
+  .sel-count { flex: 0 0 100%; white-space: nowrap; }
+  .title-actions .btn { flex: 1 1 auto; }
+  .title-actions .btn.primary { flex: 1 1 100%; order: -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg viewBox="0 0 26 20" aria-hidden="true">
+        <g fill="none" stroke="#1b6c80" stroke-width="1.4">
+          <path d="M4.4 10h4.2M11.6 10h4.2M18.8 10h2.6"/>
+        </g>
+        <circle cx="3" cy="10" r="2.1" fill="#131416"/>
+        <circle cx="10" cy="10" r="2.1" fill="#1b6c80"/>
+        <circle cx="17" cy="10" r="2.1" fill="#1b6c80"/>
+        <circle cx="23" cy="10" r="2.1" fill="#cfd6d8"/>
+      </svg>
+      <span class="brand-name">tkpipe</span>
+    </div>
+    <div class="brand-scope">TikTok 采集 → ERP 采集箱</div>
+    <nav class="nav" aria-label="主导航">
+      <a class="nav-item" href="#collect" data-view="collect" id="nav-collect">
+        <span class="label">采集</span>
+      </a>
+      <a class="nav-item" href="#results" data-view="results" id="nav-results">
+        <span class="label">采集结果</span><span class="nav-count" id="navResultsCount">0</span>
+      </a>
+      <a class="nav-item" href="#box" data-view="box" id="nav-box">
+        <span class="label">采集箱</span><span class="nav-count" id="navBoxCount">-</span>
+      </a>
+      <a class="nav-item" href="#log" data-view="log" id="nav-log">
+        <span class="label">运行日志</span><span class="nav-count" id="navLogCount">0</span>
+      </a>
+    </nav>
+    <div class="foot">本地运行 · 不经过第三方服务器</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="btn ghost sm menu-toggle" id="btnMenu" aria-label="打开导航">菜单</button>
+      <span class="where" id="topWhere">采集</span>
+      <span class="spacer"></span>
+      <span id="erpBadge" class="pill">ERP 未检测</span>
+      <button class="btn ghost sm" id="btnCheck">重新检测</button>
+    </div>
+
+    <div class="sheet">
+      <!-- ============ 采集 ============ -->
+      <section class="view on" id="view-collect">
+        <div class="title-row">
+          <div>
+            <h1>采集</h1>
+            <p class="sub" id="collectSub">选一个来源，采集后勾选要发布的商品推进采集箱。</p>
+          </div>
+          <div class="title-actions">
+            <button class="btn primary" id="btnCollect">开始采集</button>
+          </div>
+        </div>
+
+        <div class="rail" aria-label="本轮流水线">
+          <div class="rail-step">
+            <div class="rail-label">来源</div>
+            <div class="rail-value" id="railInput">0<small>条</small></div>
+            <div class="rail-track"><div class="rail-fill" id="railInputFill" style="width:0%"></div></div>
+          </div>
+          <div class="rail-step">
+            <div class="rail-label">已采集</div>
+            <div class="rail-value" id="railCollected">0<small>条</small></div>
+            <div class="rail-track"><div class="rail-fill" id="railCollectedFill" style="width:0%"></div></div>
+          </div>
+          <div class="rail-step">
+            <div class="rail-label">已推送</div>
+            <div class="rail-value" id="railPushed">0<small>条</small></div>
+            <div class="rail-track"><div class="rail-fill" id="railPushedFill" style="width:0%"></div></div>
+          </div>
+          <div class="rail-step">
+            <div class="rail-label">采集箱</div>
+            <div class="rail-value" id="railBox">-</div>
+            <div class="rail-track"><div class="rail-fill" id="railBoxFill" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="panel col-7">
+            <header>
+              <h2>来源与条件</h2>
+              <span class="meta" id="modeMeta">自动判断</span>
+            </header>
+
+            <div class="field">
+              <label>采集模式</label>
+              <div class="segmented" id="modeGroup" role="group" aria-label="采集模式">
+                <button type="button" data-mode="category" aria-pressed="true">类目</button>
+                <button type="button" data-mode="keyword" aria-pressed="false">关键词</button>
+                <button type="button" data-mode="shop" aria-pressed="false">店铺</button>
+                <button type="button" data-mode="detail" aria-pressed="false">详情</button>
+                <button type="button" data-mode="auto" aria-pressed="false">自动</button>
+              </div>
+              <span class="hint" id="modeHint">只采一个类目：选好类目后按开始采集。</span>
+            </div>
+
+            <div class="field">
+              <label for="urls" id="urlsLabel">采集目标</label>
+              <textarea class="input" id="urls" placeholder="每行一个类目 ID（如 839944），或直接用下面的「选择类目」面板"></textarea>
+              <span class="hint" id="urlsHint">每行一条；为空时使用下方已选类目。</span>
+            </div>
+
+            <div class="field">
+              <div class="field-row">
+                <label for="site" style="font-weight:500">站点</label>
+                <select class="input" id="site" style="width:96px;height:32px">
+                  <option value="us">US</option>
+                  <option value="uk">UK</option>
+                </select>
+                <label for="maxPages" style="font-weight:500;margin-left:8px">最多翻页</label>
+                <input class="input" type="number" id="maxPages" value="1" min="1" max="20" style="width:72px;height:32px">
+                <span class="check" style="margin-left:8px"><input type="checkbox" id="withDetail"> 列表里每条再抓详情</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>过滤</label>
+              <div class="field-row">
+                <span class="check"><input type="checkbox" id="fSales"> <strong>销量</strong></span>
+                <input class="input" type="number" id="salesMin" value="0" min="0" style="width:88px;height:32px" aria-label="最低销量">
+                <span style="color:var(--faint)">至</span>
+                <input class="input" type="number" id="salesMax" value="999999" min="0" style="width:100px;height:32px" aria-label="最高销量">
+                <span class="check" style="margin-left:12px"><input type="checkbox" id="fPrice"> <strong>价格</strong></span>
+                <input class="input" type="number" id="priceMin" value="0" min="0" step="0.01" style="width:88px;height:32px" aria-label="最低价格">
+                <span style="color:var(--faint)">至</span>
+                <input class="input" type="number" id="priceMax" value="99999" min="0" step="0.01" style="width:100px;height:32px" aria-label="最高价格">
+                <span class="check" style="margin-left:12px"><input type="checkbox" id="fBrand"> 过滤有品牌</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="where">条件表达式</label>
+              <div class="field-row">
+                <input class="input" id="where" placeholder="销量 100-1000   或   价格 < 20 and 评分 >= 4.5" style="flex:1;min-width:240px">
+                <select class="input" id="wherePreset" style="width:150px;height:32px">
+                  <option value="">常用条件</option>
+                  <option value="销量 100-1000">销量 100-1000</option>
+                  <option value="销量 1000-10000">销量 1000-10000</option>
+                  <option value="价格 < 20">价格 &lt; 20</option>
+                  <option value="价格 10-50">价格 10-50</option>
+                  <option value="评分 >= 4.5">评分 &gt;= 4.5</option>
+                  <option value="销量 > 1000 and 评分 >= 4.5">销量&gt;1000 且 评分≥4.5</option>
+                  <option value="品牌 = 无">无品牌商品</option>
+                </select>
+              </div>
+              <span class="hint">支持 <code>and</code> <code>or</code> <code>not</code> 与括号；字段：销量 价格 划线价 评分 评论数 粉丝数 标题 店铺 品牌 类目 运费。</span>
+            </div>
+
+          </div>
+
+          <div class="panel col-5">
+            <header>
+              <h2>运行状态</h2>
+              <span class="meta" id="runStamp">尚未运行</span>
+            </header>
+            <div class="run-state">
+              <div class="run-line"><span class="k">当前状态</span><span class="v" id="runState">空闲</span></div>
+              <div class="run-line"><span class="k">浏览器</span><span class="v" id="runBrowser">未启动</span></div>
+              <div class="run-line"><span class="k">用时</span><span class="v" id="runElapsed">-</span></div>
+              <div class="run-line"><span class="k">本轮结果</span><span class="v" id="runCount">0 条</span></div>
+              <div class="run-line"><span class="k">采集箱</span><span class="v" id="runBox">-</span></div>
+            </div>
+            <header style="margin-top:20px;margin-bottom:10px"><h2>采集箱</h2></header>
+            <div class="run-state">
+              <div class="run-line"><span class="k">总数</span><span class="v" id="quickTotal">-</span></div>
+              <div class="run-line"><span class="k">排队中</span><span class="v" id="quickProcessing">-</span></div>
+              <div class="run-line"><span class="k">已解析</span><span class="v" id="quickSuccess">-</span></div>
+              <div class="run-line"><span class="k">失败</span><span class="v" id="quickFail">-</span></div>
+            </div>
+            <header style="margin-top:20px;margin-bottom:10px"><h2>最近几步</h2></header>
+            <div class="ticks" id="runTicks">
+              <div class="tick"><span class="time">-</span><span class="msg">暂无运行记录</span></div>
+            </div>
+            <div class="field" style="margin-top:20px">
+              <button class="btn ghost" id="btnClear" style="justify-self:start;padding-left:0">清空本次结果</button>
+            </div>
+          </div>
+
+          <div class="panel col-7" id="catPanel">
+            <header>
+              <h2>选择类目</h2>
+              <span class="meta" id="catPicked">未选类目</span>
+            </header>
+            <div class="field-row">
+              <input class="input" id="catSearch" placeholder="搜类目（中 / 英）" style="flex:1;min-width:180px;height:32px">
+              <button class="btn sm" id="btnCatReload">重载类目</button>
+              <button class="btn ghost sm" id="btnCatToggle" aria-expanded="true">收起</button>
+            </div>
+            <div class="cat-body" id="catBody">
+              <div class="cat-list" id="catList"><div class="empty">点「重载类目」加载<span class="line2">要开一次浏览器，约 10 秒</span></div></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============ 采集结果 ============ -->
+      <section class="view" id="view-results">
+        <div class="title-row">
+          <div>
+            <h1>采集结果</h1>
+            <p class="sub" id="resultsSub">还没有采集结果。先在「采集」里选来源跑一轮。</p>
+          </div>
+          <div class="title-actions">
+            <span class="sel-count" id="resCount"></span>
+            <button class="btn" id="btnAll">全选</button>
+            <button class="btn" id="btnNone">全不选</button>
+            <button class="btn primary" id="btnPush">推送选中</button>
+            <button class="btn" id="btnCsv">导出 CSV</button>
+          </div>
+        </div>
+        <div id="resWrap"><div class="empty">还没有采集结果<span class="line2">跑一轮采集后，商品会出现在这里</span></div></div>
+      </section>
+
+      <!-- ============ 采集箱 ============ -->
+      <section class="view" id="view-box">
+        <div class="title-row">
+          <div>
+            <h1>采集箱</h1>
+            <p class="sub" id="boxSub">服务端的真实状态：processing 排队、success 已解析、skip 重复跳过、fail 失败。</p>
+          </div>
+          <div class="title-actions">
+            <button class="btn" id="btnBox">刷新</button>
+          </div>
+        </div>
+        <div class="cards" id="boxCards" role="group" aria-label="按状态筛选">
+          <button class="count-card" data-status="" aria-pressed="true"><span class="count-label">全部</span><span class="count-value" id="cardAll">0</span></button>
+          <button class="count-card" data-status="processing" aria-pressed="false"><span class="count-label">排队中</span><span class="count-value" id="cardProcessing">0</span></button>
+          <button class="count-card" data-status="success" aria-pressed="false"><span class="count-label">已解析</span><span class="count-value" id="cardSuccess">0</span></button>
+          <button class="count-card" data-status="fail" aria-pressed="false"><span class="count-label">失败</span><span class="count-value" id="cardFail">0</span></button>
+        </div>
+        <div id="boxWrap"><div class="empty">点「刷新」读取采集箱<span class="line2">需要 cookies.json 里的 ERP 登录态</span></div></div>
+      </section>
+
+      <!-- ============ 运行日志 ============ -->
+      <section class="view" id="view-log">
+        <div class="title-row">
+          <div>
+            <h1>运行日志</h1>
+            <p class="sub" id="logSub">采集与推送的每一步，按时间顺序。</p>
+          </div>
+          <div class="title-actions">
+            <button class="btn" id="btnLogClear">清空日志</button>
+          </div>
+        </div>
+        <div class="log-list" id="log"><div class="empty">暂无日志<span class="line2">开始采集后会实时追加</span></div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let items = [];
+// 调试/测试钩子：把渲染入口暴露出去（不影响正常使用）
+window.__tkpipe = {
+  setItems(list) { items = (list || []).map(x => ({ ...x, _sel: true })); renderResults(); renderRail(); },
+  setBox(list, total) { boxList = list || []; boxTotal = total || 0; renderBox(); renderQuick(); renderRail(); },
+  setPushed(n) { pushedCount = n || 0; renderRail(); },
+};
+let mode = 'category';
+let catTree = [];
+let catLoaded = false;
+let catPicked = null;
+let pushedCount = 0;
+let boxTotal = 0;
+let boxList = [];
+let boxFilter = '';
+let logs = [];
+let runStartedAt = 0;
+let runState = '空闲';
+
+const MODES = {
+  category: { label: '类目', hint: '只采一个类目：选好类目后按开始采集。', ph: '每行一个类目 ID（如 839944），或直接用下面的「选择类目」面板' },
+  keyword:  { label: '关键词', hint: '每个关键词会搜索一轮，按行分隔。', ph: '每行一个关键词，例如 eyeglasses' },
+  shop:     { label: '店铺', hint: '采集整店商品，并带上粉丝数、已售出、视频数。', ph: '每行一个店铺 URL，例如 https://shop.tiktok.com/us/store/...' },
+  detail:   { label: '详情', hint: '逐条采集详情页的 18 个字段。', ph: '每行一个商品 URL，例如 https://shop.tiktok.com/us/pdp/...' },
+  auto:     { label: '自动', hint: '按 URL 形态自动判断列表或详情。', ph: '每行一个 URL' },
+};
+
+/* ---------- log ---------- */
+function logLine(msg, level) {
+  const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  logs.push({ t, msg, level: level || '' });
+  if (logs.length > 500) logs.shift();
+  renderLog();
+  renderTicks();
+  $('navLogCount').textContent = String(logs.length);
+}
+function renderLog() {
+  const el = $('log');
+  if (!logs.length) { el.innerHTML = '<div class="empty">暂无日志<span class="line2">开始采集后会实时追加</span></div>'; return; }
+  el.innerHTML = logs.slice(-300).map(l =>
+    '<div class="log-row ' + l.level + '"><span class="time">' + l.t + '</span><span class="msg">' + esc(l.msg) + '</span></div>'
+  ).join('');
+}
+function renderTicks() {
+  const el = $('runTicks');
+  const last = logs.slice(-4).reverse();
+  if (!last.length) { el.innerHTML = '<div class="tick"><span class="time">-</span><span class="msg">暂无运行记录</span></div>'; return; }
+  el.innerHTML = last.map(l =>
+    '<div class="tick ' + l.level + '"><span class="time">' + l.t + '</span><span class="msg">' + esc(l.msg) + '</span></div>'
+  ).join('');
+}
+
+/* ---------- api ---------- */
+async function api(path, body) {
+  const r = await fetch(path, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({ ok: false, error: 'HTTP ' + r.status }));
+  if (!j.ok && j.error) throw new Error(j.error);
+  return j;
+}
+
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ---------- router ---------- */
+const VIEWS = { collect: '采集', results: '采集结果', box: '采集箱', log: '运行日志' };
+function go(view) {
+  if (!VIEWS[view]) view = 'collect';
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'view-' + view));
+  document.querySelectorAll('.nav-item').forEach(a => {
+    if (a.dataset.view === view) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+  $('topWhere').textContent = VIEWS[view];
+  $('sidebar').classList.remove('open');
+  if (view === 'box' && !boxList.length) refreshBox();
+}
+function route() {
+  const v = (location.hash || '#collect').replace('#', '');
+  go(VIEWS[v] ? v : 'collect');
+}
+
+/* ---------- pipeline rail ---------- */
+function renderRail() {
+  const inputCount = Math.max(inputTargets().length, 0);
+  const collected = items.length;
+  const pushed = pushedCount;
+  const max = Math.max(inputCount, collected, pushed, boxTotal, 1);
+  const set = (id, fillId, val, unit) => {
+    $(id).innerHTML = val + (unit || '');
+    $(fillId).style.width = Math.min(100, Math.round((val / max) * 100)) + '%';
+  };
+  set('railInput', 'railInputFill', inputCount, '<small>条</small>');
+  set('railCollected', 'railCollectedFill', collected, '<small>条</small>');
+  set('railPushed', 'railPushedFill', pushed, '<small>条</small>');
+  $('railBox').innerHTML = boxTotal ? boxTotal + '<small>条</small>' : '-';
+  $('railBoxFill').style.width = boxTotal ? Math.min(100, Math.round((boxTotal / max) * 100)) + '%' : '0%';
+  $('navResultsCount').textContent = String(collected);
+  $('navBoxCount').textContent = boxTotal ? String(boxTotal) : '-';
+  $('runCount').textContent = collected + ' 条';
+  $('runBox').textContent = boxTotal ? boxTotal + ' 条' : '-';
+}
+
+/* ---------- ERP status ---------- */
+async function checkErp() {
+  const b = $('erpBadge');
+  b.textContent = '检测中';
+  b.className = 'pill';
+  try {
+    const r = await api('/api/check');
+    if (r.ok) {
+      const free = r.account && r.account.isFreeAccount ? ' · 免费账号' : '';
+      b.textContent = 'ERP 已登录' + free;
+      b.className = 'pill pos';
+    } else {
+      b.textContent = 'ERP 未登录';
+      b.className = 'pill neg';
+      logLine('ERP 未登录：请把 cookies.json 放到项目根目录', 'err');
+    }
+  } catch (e) {
+    b.textContent = 'ERP 检测失败';
+    b.className = 'pill neg';
+    logLine('检测失败: ' + e.message, 'err');
+  }
+}
+
+/* ---------- mode ---------- */
+function setMode(m) {
+  if (!MODES[m]) m = 'category';
+  mode = m;
+  document.querySelectorAll('#modeGroup button').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.mode === m));
+  });
+  $('modeMeta').textContent = MODES[m].label;
+  $('modeHint').textContent = MODES[m].hint;
+  $('urls').placeholder = MODES[m].ph;
+  // 类目是这个产品的主要入口，面板常驻；其它模式下用它仍可直接选类目并切回类目模式
+  $('catPanel').hidden = false;
+  if (!catLoaded) loadCats(false);
+  renderRail();
+}
+
+/* ---------- filters ---------- */
+function buildFilters() {
+  const sales = $('fSales').checked;
+  const price = $('fPrice').checked;
+  const brand = $('fBrand').checked;
+  if (!sales && !price && !brand) return null;
+  return {
+    sales: { enabled: sales, min: parseFloat($('salesMin').value) || 0, max: parseFloat($('salesMax').value) || 999999 },
+    price: { enabled: price, min: parseFloat($('priceMin').value) || 0, max: parseFloat($('priceMax').value) || 99999.99 },
+    brandFilter: brand,
+  };
+}
+function buildWhere() {
+  const v = ($('where').value || '').trim();
+  return v || null;
+}
+function inputTargets() {
+  const lines = $('urls').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (mode === 'keyword') return lines;
+  if (mode === 'category') {
+    const ids = lines.filter(s => /^https?:\/\//.test(s) || /^\d+$/.test(s));
+    if (!ids.length && catPicked) return [catPicked.id];
+    return ids;
+  }
+  return lines.filter(s => /^https?:\/\//.test(s));
+}
+
+/* ---------- collect ---------- */
+async function doCollect() {
+  const urls = inputTargets();
+  if (!urls.length) {
+    const hint = mode === 'keyword' ? '请先填至少一个关键词'
+      : mode === 'category' ? '请先在「选择类目」里选一个类目，或填类目 ID'
+      : '请先填至少一个 http(s) URL';
+    logLine(hint, 'warn');
+    alert(hint);
+    return;
+  }
+  const btn = $('btnCollect');
+  btn.disabled = true; btn.textContent = '采集中';
+  runState = '采集中'; $('runState').textContent = runState;
+  runStartedAt = Date.now();
+  $('runStamp').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  logLine('开始采集 ' + urls.length + ' 个' + (mode === 'keyword' ? '关键词' : mode === 'category' ? '类目' : ' URL'), 'ok');
+  const timer = setInterval(() => {
+    $('runElapsed').textContent = Math.round((Date.now() - runStartedAt) / 1000) + ' 秒';
+  }, 1000);
+  try {
+    const r = await api('/api/collect', {
+      urls, mode,
+      site: $('site').value || 'us',
+      maxPages: parseInt($('maxPages').value, 10) || 1,
+      withDetail: $('withDetail').checked,
+      filters: buildFilters(),
+      where: buildWhere(),
+    });
+    items = (r.items || []).map(it => ({ ...it, _sel: true }));
+    pushedCount = 0;
+    logLine('采集完成，共 ' + items.length + ' 条', 'ok');
+    renderResults();
+    renderRail();
+    go('results');
+  } catch (e) {
+    logLine('采集失败: ' + e.message, 'err');
+  } finally {
+    clearInterval(timer);
+    runState = '空闲'; $('runState').textContent = runState;
+    btn.disabled = false; btn.textContent = '开始采集';
+    renderRail();
+  }
+}
+
+function itemTitle(it) { return it['商品标题'] || it.title || '(无标题)'; }
+function itemUrl(it) { return it['商品url'] || it['商品链接'] || it.url || ''; }
+function itemPrice(it) {
+  const p = it['价格'] !== undefined ? it['价格'] : it.price;
+  return p === undefined || p === '' ? '' : String(p);
+}
+function itemShop(it) { return it['店铺名称'] || it.shop || ''; }
+function itemSales(it) { return it['销量'] || it.saleCount || ''; }
+function itemScore(it) { return it['评分'] || it.score || ''; }
+
+function renderResults() {
+  const wrap = $('resWrap');
+  const sel = items.filter(i => i._sel).length;
+  $('resCount').textContent = items.length ? items.length + ' 条 · 选中 ' + sel : '';
+  $('resultsSub').textContent = items.length
+    ? '勾选要发布的商品，推进采集箱后可在「采集箱」看到服务端状态。'
+    : '还没有采集结果。先在「采集」里选来源跑一轮。';
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty">还没有采集结果<span class="line2">跑一轮采集后，商品会出现在这里</span></div>';
+    return;
+  }
+  const rows = items.map((it, i) => {
+    const url = itemUrl(it);
+    const img = it['主图'] || it.imgUrl || '';
+    const thumb = img
+      ? '<img class="thumb" src="' + esc(img) + '" alt="" loading="lazy">'
+      : '<span class="thumb ph" aria-hidden="true"></span>';
+    return '<tr class="row-pick" data-row="' + i + '">' +
+      '<td style="width:34px"><input type="checkbox" data-i="' + i + '" ' + (it._sel ? 'checked' : '') + ' aria-label="选择该商品"></td>' +
+      '<td class="cell-main"><div class="cell-media">' + thumb +
+        '<div class="cell-title"><div class="t">' + esc(itemTitle(it)) + '</div>' +
+        '<div class="s">' + esc(url) + '</div></div></div></td>' +
+      '<td class="n">' + (itemPrice(it) ? '$' + esc(itemPrice(it)) : '<span style="color:var(--faint)">-</span>') + '</td>' +
+      '<td class="n">' + (itemSales(it) ? esc(itemSales(it)) : '<span style="color:var(--faint)">-</span>') + '</td>' +
+      '<td class="n">' + (itemScore(it) ? esc(itemScore(it)) : '<span style="color:var(--faint)">-</span>') + '</td>' +
+      '<td>' + (itemShop(it) ? esc(itemShop(it)) : '<span style="color:var(--faint)">-</span>') + '</td>' +
+      '</tr>';
+  }).join('');
+  wrap.innerHTML = '<div class="table-wrap"><table class="tbl-results"><thead><tr>' +
+    '<th style="width:34px"></th><th>商品</th>' +
+    '<th class="n" style="width:92px">价格</th><th class="n" style="width:92px">销量</th>' +
+    '<th class="n" style="width:72px">评分</th><th style="width:164px">店铺</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  wrap.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.onclick = (ev) => ev.stopPropagation();
+    cb.onchange = () => { items[+cb.dataset.i]._sel = cb.checked; renderResults(); };
+  });
+  wrap.querySelectorAll('tr.row-pick').forEach(tr => {
+    tr.onclick = () => {
+      const it = items[+tr.dataset.row];
+      it._sel = !it._sel;
+      renderResults();
+    };
+  });
+}
+
+/* ---------- push ---------- */
+async function doPush() {
+  const sel = items.filter(i => i._sel);
+  if (!sel.length) { alert('请先勾选要推送的商品'); return; }
+  const btn = $('btnPush'); btn.disabled = true; btn.textContent = '推送中';
+  logLine('推送 ' + sel.length + ' 条到 ERP 采集箱', 'ok');
+  try {
+    const r = await api('/api/push', { items: sel });
+    pushedCount += r.pushed || 0;
+    logLine('推送完成：成功 ' + r.pushed + ' 条，失败 ' + r.failed + ' 条', r.failed ? 'warn' : 'ok');
+    if (r.details && r.details.length) r.details.forEach(d => logLine('  ' + d.reason, 'err'));
+    items.forEach(it => { if (it._sel) it._sel = false; });
+    renderResults();
+    renderRail();
+    await refreshBox();
+    go('box');
+  } catch (e) {
+    logLine('推送失败: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '推送选中';
+  }
+}
+
+/* ---------- box ---------- */
+function pillFor(status) {
+  const map = { success: 'pos', processing: 'info', fail: 'neg', skip: 'warn' };
+  const label = { success: '已解析', processing: '排队中', fail: '失败', skip: '重复跳过' };
+  return '<span class="pill ' + (map[status] || '') + '">' + (label[status] || esc(status)) + '</span>';
+}
+function renderQuick() {
+  const c = { processing: 0, success: 0, fail: 0 };
+  boxList.forEach(d => { if (c[d.status] !== undefined) c[d.status]++; });
+  const has = boxList.length > 0;
+  $('quickTotal').textContent = has ? String(boxTotal || boxList.length) + ' 条' : '-';
+  $('quickProcessing').textContent = has ? String(c.processing) : '-';
+  $('quickSuccess').textContent = has ? String(c.success) : '-';
+  $('quickFail').textContent = has ? String(c.fail) : '-';
+}
+
+function boxTitle(d) {
+  if (d.title && d.title !== 'null') return esc(d.title);
+  // 没解析出标题时，按状态说清楚它在等什么，而不是一律写"等待解析"
+  if (d.status === 'fail') return '<span style="color:var(--faint)">采集失败，无标题</span>';
+  if (d.status === 'skip') return '<span style="color:var(--faint)">重复跳过，无标题</span>';
+  return '<span style="color:var(--faint)">等待服务端解析</span>';
+}
+
+function renderBox() {
+  const wrap = $('boxWrap');
+  const counts = { '': boxList.length, processing: 0, success: 0, fail: 0 };
+  boxList.forEach(d => { if (counts[d.status] !== undefined) counts[d.status]++; });
+  $('cardAll').textContent = String(boxTotal || boxList.length);
+  $('cardProcessing').textContent = String(counts.processing);
+  $('cardSuccess').textContent = String(counts.success);
+  $('cardFail').textContent = String(counts.fail);
+
+  const list = boxFilter ? boxList.filter(d => d.status === boxFilter) : boxList;
+  if (!list.length) {
+    wrap.innerHTML = '<div class="empty">' + (boxFilter ? '这个状态下没有条目' : '采集箱是空的') +
+      '<span class="line2">' + (boxFilter ? '换一个状态看看' : '推送商品后会出现') + '</span></div>';
+    return;
+  }
+  wrap.innerHTML = '<div class="table-wrap"><table class="tbl-box"><thead><tr>' +
+    '<th style="width:96px">状态</th><th>商品</th><th style="width:200px">sourceItemId</th><th style="width:88px">来源</th>' +
+    '</tr></thead><tbody>' +
+    list.map(d => '<tr>' +
+      '<td>' + pillFor(d.status) + '</td>' +
+      '<td class="cell-main"><div class="cell-title"><div class="t">' + boxTitle(d) + '</div></div></td>' +
+      '<td style="font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums">' + esc(d.itemId) + '</td>' +
+      '<td style="color:var(--muted)">' + esc(d.source) + '</td>' +
+      '</tr>').join('') + '</tbody></table></div>';
+}
+async function refreshBox() {
+  const wrap = $('boxWrap');
+  wrap.innerHTML = '<div class="empty">读取中</div>';
+  try {
+    const r = await api('/api/box', { pageNo: 1, pageSize: 40 });
+    boxTotal = r.total || 0;
+    boxList = r.list || [];
+    $('boxSub').textContent = '共 ' + boxTotal + ' 条 · processing 排队、success 已解析、skip 重复跳过、fail 失败。';
+    renderQuick();
+    renderBox();
+    renderRail();
+    logLine('采集箱共 ' + boxTotal + ' 条', 'ok');
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">读取失败<span class="line2">' + esc(e.message) + '</span></div>';
+    logLine('读采集箱失败: ' + e.message, 'err');
+  }
+}
+
+/* ---------- category ---------- */
+function renderCats(keyword) {
+  const wrap = $('catList');
+  const kw = (keyword || '').trim().toLowerCase();
+  if (!catTree.length) {
+    wrap.innerHTML = '<div class="empty">没有类目数据<span class="line2">点「重载类目」</span></div>';
+    return;
+  }
+  const match = (n) => !kw || String(n).toLowerCase().includes(kw);
+  const rows = catTree.filter(t => match(t.name) || (t.children || []).some(c => match(c.name)));
+  if (!rows.length) { wrap.innerHTML = '<div class="empty">没有匹配的类目</div>'; return; }
+
+  wrap.innerHTML = rows.map(t => {
+    const kids = (t.children || []).filter(c => match(c.name) || match(t.name));
+    const open = kw ? ' open' : '';
+    return '<div class="cat-top' + open + '">' +
+      '<div class="cat-row"><span class="cat-caret">▶</span>' +
+        '<span class="cat-name">' + esc(t.name) + '</span>' +
+        '<span class="cat-id">' + esc(t.id) + '</span></div>' +
+      '<div class="cat-kids">' +
+        '<div class="cat-kid" data-id="' + esc(t.id) + '" data-name="' + esc(t.name) + '">全部分类（' + esc(t.name) + '）</div>' +
+        kids.map(c => '<div class="cat-kid" data-id="' + esc(c.id) + '" data-name="' + esc(c.name) + '">' +
+          '<span class="cat-name">' + esc(c.name) + '</span><span class="cat-id">' + esc(c.id) + '</span></div>').join('') +
+      '</div></div>';
+  }).join('');
+
+  wrap.querySelectorAll('.cat-row').forEach(row => {
+    row.onclick = () => row.parentElement.classList.toggle('open');
+  });
+  wrap.querySelectorAll('.cat-kid').forEach(kid => {
+    kid.onclick = () => pickCategory(kid.dataset.id, kid.dataset.name);
+  });
+  if (catPicked) {
+    wrap.querySelectorAll('.cat-kid').forEach(k => {
+      if (String(k.dataset.id) === String(catPicked.id)) k.classList.add('active');
+    });
+  }
+}
+function pickCategory(id, name) {
+  catPicked = { id: String(id), name: name || String(id) };
+  $('catPicked').textContent = catPicked.name + ' · ' + catPicked.id;
+  $('urls').value = catPicked.id;
+  renderCats($('catSearch').value);
+  renderRail();
+  logLine('已选择类目：' + catPicked.name + ' (' + catPicked.id + ')', 'ok');
+}
+async function loadCats(force) {
+  if (catLoaded && !force) return;
+  const wrap = $('catList');
+  wrap.innerHTML = '<div class="empty">加载类目中<span class="line2">要开一次浏览器，约 10 秒</span></div>';
+  try {
+    const r = await api('/api/categories', { site: $('site').value || 'us' });
+    catTree = r.tree || [];
+    catLoaded = true;
+    renderCats($('catSearch').value);
+    logLine('类目已加载：' + catTree.length + ' 个一级 / ' + (r.total || 0) + ' 个节点', 'ok');
+  } catch (e) {
+    wrap.innerHTML = '<div class="empty">加载失败<span class="line2">' + esc(e.message) + '</span></div>';
+    logLine('加载类目失败: ' + e.message, 'err');
+  }
+}
+
+/* ---------- SSE ---------- */
+function connectSse() {
+  const es = new EventSource('/api/events');
+  es.onmessage = (ev) => {
+    try {
+      const e = JSON.parse(ev.data);
+      if (e.type === 'progress' && e.message) logLine(e.message);
+      else if (e.type === 'browser') {
+        $('runBrowser').textContent = '端口 ' + e.port;
+        logLine('Chrome 已连接（端口 ' + e.port + '）', 'ok');
+      } else if (e.type === 'error') logLine(e.message, 'err');
+    } catch (x) {}
+  };
+  es.onerror = () => {};
+}
+
+/* ---------- bind ---------- */
+document.querySelectorAll('#modeGroup button').forEach(btn => {
+  btn.onclick = () => setMode(btn.dataset.mode);
+});
+$('urls').oninput = renderRail;
+$('wherePreset').onchange = () => {
+  const v = $('wherePreset').value;
+  if (v) $('where').value = v;
+};
+$('where').onkeydown = (e) => { if (e.key === 'Enter') doCollect(); };
+$('btnCatToggle').onclick = () => {
+  const body = $('catBody');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  $('btnCatToggle').textContent = open ? '展开类目' : '收起类目';
+  $('btnCatToggle').setAttribute('aria-expanded', String(!open));
+  if (!open && !catLoaded) loadCats(false);
+};
+$('btnCatReload').onclick = () => loadCats(true);
+$('catSearch').oninput = () => renderCats($('catSearch').value);
+$('btnCheck').onclick = checkErp;
+$('btnCollect').onclick = doCollect;
+$('btnPush').onclick = doPush;
+$('btnBox').onclick = refreshBox;
+$('btnClear').onclick = () => {
+  items = []; pushedCount = 0; $('urls').value = '';
+  renderResults(); renderRail();
+  logLine('已清空本次结果', 'warn');
+};
+$('btnAll').onclick = () => { items.forEach(i => i._sel = true); renderResults(); };
+$('btnNone').onclick = () => { items.forEach(i => i._sel = false); renderResults(); };
+$('btnCsv').onclick = async () => {
+  if (!items.length) { alert('还没有采集结果'); return; }
+  try {
+    const r = await api('/api/export', { items });
+    logLine('CSV: ' + r.file, 'ok');
+  } catch (e) { logLine('导出失败: ' + e.message, 'err'); }
+};
+$('btnLogClear').onclick = () => { logs = []; renderLog(); renderTicks(); $('navLogCount').textContent = '0'; };
+$('btnMenu').onclick = () => $('sidebar').classList.toggle('open');
+
+$('sidebar').onclick = (e) => { if (e.target === $('sidebar')) $('sidebar').classList.remove('open'); };
+document.querySelectorAll('.nav-item').forEach(a => { a.onclick = () => go(a.dataset.view); });
+document.querySelectorAll('#boxCards .count-card').forEach(card => {
+  card.onclick = () => {
+    boxFilter = card.dataset.status || '';
+    document.querySelectorAll('#boxCards .count-card').forEach(c => c.setAttribute('aria-pressed', String(c === card)));
+    renderBox();
+  };
+});
+window.addEventListener('hashchange', route);
+window.addEventListener('resize', renderRail);
+
+/* ---------- boot ---------- */
+setMode('category');
+route();
+renderRail();
+renderTicks();
+renderResults();
+connectSse();
+checkErp();
+logLine('界面就绪', 'ok');
+</script>
+</body>
+</html>
