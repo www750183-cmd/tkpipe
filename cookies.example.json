@@ -1,0 +1,7 @@
+{
+  "_comment": "把这个文件改名为 cookies.json 再填值（cookies.json 已在 .gitignore 里，不会被提交）",
+  "mserp_sst": "从浏览器复制",
+  "accountId": "从浏览器复制",
+  "autoLoginToken": "从浏览器复制（JWT）",
+  "tfstk": "从浏览器复制"
+}
