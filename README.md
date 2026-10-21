@@ -73,7 +73,7 @@ node src/server.js --port 7788
 | `push <url...>` | 采集 + 推送进 ERP 采集箱 |
 | `push --file out.json` | 用已有 JSON 推送 |
 
-采集模式（`--mode`）与「美区截流采集软件」5 种采集类型一一对应：
+采集模式（`--mode`）覆盖常见采集场景：
 
 | 场景 | tkpipe 命令 |
 | --- | --- |
