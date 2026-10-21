@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# personal credentials: never commit
+cookies.json
+cookies*.json
+*.cookie
+.env
+.env.*
+
+# runtime artifacts
+output/
+.chrome-profile/
+.chrome-*/
+.tmp/
+
+# analysis scratch (large, contains third-party site content)
+_reverse/
+cfs*/
+
+# design audit artifacts
+.taste-skill/
+
+# system / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
